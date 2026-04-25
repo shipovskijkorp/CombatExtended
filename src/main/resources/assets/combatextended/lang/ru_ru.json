@@ -1,0 +1,8 @@
+{
+  "tooltip.combatextended.weapon.attack_damage": "Урон при атаке: %s",
+  "tooltip.combatextended.weapon.attack_speed": "Скорость атаки: %s",
+  "tooltip.combatextended.weapon.attack_range": "Дальность атаки: %s",
+  "tooltip.combatextended.trident.attack_damage": "Урон при атаке: %s",
+  "tooltip.combatextended.trident.attack_speed": "Скорость атаки: %s",
+  "tooltip.combatextended.trident.entity_interaction_range": "Дальность атаки: %s"
+}

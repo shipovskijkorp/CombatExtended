@@ -1,0 +1,8 @@
+{
+  "tooltip.combatextended.weapon.attack_damage": "Attack Damage: %s",
+  "tooltip.combatextended.weapon.attack_speed": "Attack Speed: %s",
+  "tooltip.combatextended.weapon.attack_range": "Attack range: %s",
+  "tooltip.combatextended.trident.attack_damage": "Attack Damage: %s",
+  "tooltip.combatextended.trident.attack_speed": "Attack Speed: %s",
+  "tooltip.combatextended.trident.entity_interaction_range": "Attack range: %s"
+}
