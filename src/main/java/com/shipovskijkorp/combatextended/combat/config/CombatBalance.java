@@ -23,6 +23,9 @@ public final class CombatBalance {
     public static final double STRENGTH_ATTACK_DAMAGE_PER_LEVEL = 3.0D;
     public static final double WEAKNESS_ATTACK_DAMAGE_PENALTY_PER_LEVEL = 4.0D;
 
+    /** Player damage multiplier for end crystal, bed and respawn anchor explosions. */
+    public static final float SPECIAL_EXPLOSION_PLAYER_DAMAGE_MULTIPLIER = 1.0F / 3.0F;
+
     /** A quarter-second cooldown at 20 TPS. */
     public static final int BOW_COOLDOWN_TICKS = 5;
 

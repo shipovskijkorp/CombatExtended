@@ -6,6 +6,7 @@
     "accessor.EntityWorldAccessor",
     "ItemStackMixin",
     "entity.LivingEntityTotemCooldownMixin",
+    "entity.LivingEntitySpecialExplosionDamageMixin",
     "item.BowItemMixin",
     "item.TridentItemMixin"
   ],
