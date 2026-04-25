@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 public final class CombatWeaponTooltip {
     private static final Identifier SHARPNESS_ID = Identifier.ofVanilla("sharpness");
+    private static final Identifier POWER_ID = Identifier.ofVanilla("power");
 
     private CombatWeaponTooltip() {
     }
@@ -93,19 +94,23 @@ public final class CombatWeaponTooltip {
     }
 
     private static double getSharpnessDamageBonus(ItemStack stack) {
+        int level = getEnchantmentLevel(stack, SHARPNESS_ID);
+        return level > 0 ? 0.5D * level + 0.5D : 0.0D;
+    }
+
+    private static int getEnchantmentLevel(ItemStack stack, Identifier enchantmentId) {
         ItemEnchantmentsComponent enchantments = stack.getOrDefault(
                 DataComponentTypes.ENCHANTMENTS,
                 ItemEnchantmentsComponent.DEFAULT
         );
 
         for (Object2IntMap.Entry<RegistryEntry<Enchantment>> entry : enchantments.getEnchantmentEntries()) {
-            if (entry.getKey().matchesId(SHARPNESS_ID)) {
-                int level = entry.getIntValue();
-                return level > 0 ? 0.5D * level + 0.5D : 0.0D;
+            if (entry.getKey().matchesId(enchantmentId)) {
+                return entry.getIntValue();
             }
         }
 
-        return 0.0D;
+        return 0;
     }
 
     private static double getStatusEffectAttackDamageBonus(PlayerEntity player) {
@@ -162,7 +167,21 @@ public final class CombatWeaponTooltip {
             return CombatBalance.CROSSBOW_ARROW_DAMAGE_TOOLTIP;
         }
 
-        return CombatBalance.BOW_ARROW_DAMAGE_TOOLTIP;
+        return CombatBalance.BOW_MINIMUM_ARROW_DAMAGE_TOOLTIP + " - " + format(calculateBowMaximumCriticalDamage(stack));
+    }
+
+    private static double calculateBowMaximumCriticalDamage(ItemStack stack) {
+        int powerLevel = getEnchantmentLevel(stack, POWER_ID);
+        double arrowBaseDamage = CombatBalance.BOW_ARROW_BASE_DAMAGE;
+
+        if (powerLevel > 0) {
+            arrowBaseDamage += 0.5D * powerLevel + 0.5D;
+        }
+
+        int fullDrawDamage = (int) Math.ceil(CombatBalance.BOW_FULL_DRAW_ARROW_SPEED * arrowBaseDamage);
+        int maximumCriticalBonus = fullDrawDamage / 2 + 1;
+
+        return fullDrawDamage + maximumCriticalBonus;
     }
 
     private static boolean hasMainHandCombatAttributes(ItemStack stack) {
