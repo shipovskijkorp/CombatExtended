@@ -4,9 +4,12 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "accessor.EntityWorldAccessor",
+    "accessor.EntityDamageCooldownAccessor",
+    "accessor.PersistentProjectileEntityWeaponAccessor",
     "ItemStackMixin",
     "entity.LivingEntityTotemCooldownMixin",
     "entity.LivingEntitySpecialExplosionDamageMixin",
+    "entity.LivingEntityMultishotDamageMixin",
     "item.BowItemMixin",
     "item.TridentItemMixin"
   ],
