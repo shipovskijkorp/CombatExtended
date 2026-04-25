@@ -29,6 +29,10 @@ public final class CombatBalance {
     /** A quarter-second cooldown at 20 TPS. */
     public static final int BOW_COOLDOWN_TICKS = 5;
 
+    /** Missed melee attacks recover 30% faster, so only 70% of the delay remains. */
+    public static final double MISSED_ATTACK_COOLDOWN_REDUCTION = 0.30D;
+    public static final double MISSED_ATTACK_COOLDOWN_MULTIPLIER = 1.0D - MISSED_ATTACK_COOLDOWN_REDUCTION;
+
     public static final double VANILLA_PLAYER_BASE_ATTACK_DAMAGE = 1.0D;
     public static final double VANILLA_PLAYER_BASE_ATTACK_SPEED = 4.0D;
     public static final double VANILLA_PLAYER_ENTITY_INTERACTION_RANGE = 3.0D;

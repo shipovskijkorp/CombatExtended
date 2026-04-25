@@ -6,6 +6,7 @@
     "accessor.EntityWorldAccessor",
     "accessor.EntityDamageCooldownAccessor",
     "accessor.PersistentProjectileEntityWeaponAccessor",
+    "accessor.LivingEntityAttackCooldownAccessor",
     "ItemStackMixin",
     "entity.LivingEntityTotemCooldownMixin",
     "entity.LivingEntitySpecialExplosionDamageMixin",

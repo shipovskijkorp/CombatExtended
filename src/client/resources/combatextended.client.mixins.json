@@ -2,7 +2,9 @@
   "required": true,
   "package": "com.shipovskijkorp.combatextended.client.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": [],
+  "client": [
+    "MinecraftClientMissCooldownMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },
