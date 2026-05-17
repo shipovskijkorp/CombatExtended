@@ -10,7 +10,7 @@
   "contact": {
     "sources": "https://github.com/shipovskijkorp/CombatExtended"
   },
-  "license": "All-Rights-Reserved",
+  "license": "MIT",
   "icon": "assets/combatextended/icon.png",
   "environment": "*",
   "entrypoints": {
