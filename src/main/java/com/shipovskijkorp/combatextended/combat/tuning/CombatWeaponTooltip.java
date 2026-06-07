@@ -2,31 +2,32 @@ package com.shipovskijkorp.combatextended.combat.tuning;
 
 import com.shipovskijkorp.combatextended.combat.config.CombatBalance;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BowItem;
-import net.minecraft.item.CrossbowItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.function.Consumer;
 
 public final class CombatWeaponTooltip {
-    private static final Identifier SHARPNESS_ID = Identifier.ofVanilla("sharpness");
-    private static final Identifier POWER_ID = Identifier.ofVanilla("power");
+    private static final Identifier SHARPNESS_ID = Identifier.withDefaultNamespace("sharpness");
+    private static final Identifier POWER_ID = Identifier.withDefaultNamespace("power");
 
     private CombatWeaponTooltip() {
     }
@@ -41,8 +42,8 @@ public final class CombatWeaponTooltip {
 
     public static void appendVanillaStyleAttributes(
             ItemStack stack,
-            PlayerEntity player,
-            Consumer<Text> textConsumer
+            Player player,
+            Consumer<Component> textConsumer
     ) {
         appendVanillaMainHandHeader(textConsumer);
 
@@ -54,20 +55,20 @@ public final class CombatWeaponTooltip {
         appendDamage(textConsumer, format(calculateMeleeAttackDamage(stack, player)));
         appendAttackSpeed(textConsumer, format(getMainHandAttributeValue(
                 stack,
-                EntityAttributes.ATTACK_SPEED,
+                Attributes.ATTACK_SPEED,
                 CombatBalance.VANILLA_PLAYER_BASE_ATTACK_SPEED
         )));
         appendAttackRange(textConsumer, format(getMainHandAttributeValue(
                 stack,
-                EntityAttributes.ENTITY_INTERACTION_RANGE,
+                Attributes.ENTITY_INTERACTION_RANGE,
                 CombatBalance.VANILLA_PLAYER_ENTITY_INTERACTION_RANGE
         )));
     }
 
-    private static double calculateMeleeAttackDamage(ItemStack stack, PlayerEntity player) {
+    private static double calculateMeleeAttackDamage(ItemStack stack, Player player) {
         double damage = getMainHandAttributeValue(
                 stack,
-                EntityAttributes.ATTACK_DAMAGE,
+                Attributes.ATTACK_DAMAGE,
                 CombatBalance.VANILLA_PLAYER_BASE_ATTACK_DAMAGE
         );
 
@@ -82,15 +83,15 @@ public final class CombatWeaponTooltip {
 
     private static double getMainHandAttributeValue(
             ItemStack stack,
-            net.minecraft.registry.entry.RegistryEntry<net.minecraft.entity.attribute.EntityAttribute> attribute,
+            Holder<Attribute> attribute,
             double baseValue
     ) {
-        AttributeModifiersComponent modifiers = stack.getOrDefault(
-                DataComponentTypes.ATTRIBUTE_MODIFIERS,
-                AttributeModifiersComponent.DEFAULT
+        ItemAttributeModifiers modifiers = stack.getOrDefault(
+                DataComponents.ATTRIBUTE_MODIFIERS,
+                ItemAttributeModifiers.EMPTY
         );
 
-        return modifiers.applyOperations(attribute, baseValue, EquipmentSlot.MAINHAND);
+        return modifiers.compute(attribute, baseValue, EquipmentSlot.MAINHAND);
     }
 
     private static double getSharpnessDamageBonus(ItemStack stack) {
@@ -99,13 +100,13 @@ public final class CombatWeaponTooltip {
     }
 
     private static int getEnchantmentLevel(ItemStack stack, Identifier enchantmentId) {
-        ItemEnchantmentsComponent enchantments = stack.getOrDefault(
-                DataComponentTypes.ENCHANTMENTS,
-                ItemEnchantmentsComponent.DEFAULT
+        ItemEnchantments enchantments = stack.getOrDefault(
+                DataComponents.ENCHANTMENTS,
+                ItemEnchantments.EMPTY
         );
 
-        for (Object2IntMap.Entry<RegistryEntry<Enchantment>> entry : enchantments.getEnchantmentEntries()) {
-            if (entry.getKey().matchesId(enchantmentId)) {
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(enchantmentId)) {
                 return entry.getIntValue();
             }
         }
@@ -113,15 +114,15 @@ public final class CombatWeaponTooltip {
         return 0;
     }
 
-    private static double getStatusEffectAttackDamageBonus(PlayerEntity player) {
+    private static double getStatusEffectAttackDamageBonus(Player player) {
         double bonus = 0.0D;
 
-        StatusEffectInstance strength = player.getStatusEffect(StatusEffects.STRENGTH);
+        MobEffectInstance strength = player.getEffect(MobEffects.STRENGTH);
         if (strength != null) {
             bonus += CombatBalance.STRENGTH_ATTACK_DAMAGE_PER_LEVEL * (strength.getAmplifier() + 1);
         }
 
-        StatusEffectInstance weakness = player.getStatusEffect(StatusEffects.WEAKNESS);
+        MobEffectInstance weakness = player.getEffect(MobEffects.WEAKNESS);
         if (weakness != null) {
             bonus -= CombatBalance.WEAKNESS_ATTACK_DAMAGE_PENALTY_PER_LEVEL * (weakness.getAmplifier() + 1);
         }
@@ -129,30 +130,30 @@ public final class CombatWeaponTooltip {
         return bonus;
     }
 
-    private static void appendVanillaMainHandHeader(Consumer<Text> textConsumer) {
-        textConsumer.accept(Text.empty());
-        textConsumer.accept(Text.translatable("item.modifiers.mainhand").formatted(Formatting.GRAY));
+    private static void appendVanillaMainHandHeader(Consumer<Component> textConsumer) {
+        textConsumer.accept(Component.empty());
+        textConsumer.accept(Component.translatable("item.modifiers.mainhand").withStyle(ChatFormatting.GRAY));
     }
 
-    private static void appendDamage(Consumer<Text> textConsumer, String damage) {
-        textConsumer.accept(Text.translatable(
+    private static void appendDamage(Consumer<Component> textConsumer, String damage) {
+        textConsumer.accept(Component.translatable(
                 "tooltip.combatextended.weapon.attack_damage",
                 damage
-        ).formatted(Formatting.DARK_GREEN));
+        ).withStyle(ChatFormatting.DARK_GREEN));
     }
 
-    private static void appendAttackSpeed(Consumer<Text> textConsumer, String attackSpeed) {
-        textConsumer.accept(Text.translatable(
+    private static void appendAttackSpeed(Consumer<Component> textConsumer, String attackSpeed) {
+        textConsumer.accept(Component.translatable(
                 "tooltip.combatextended.weapon.attack_speed",
                 attackSpeed
-        ).formatted(Formatting.DARK_GREEN));
+        ).withStyle(ChatFormatting.DARK_GREEN));
     }
 
-    private static void appendAttackRange(Consumer<Text> textConsumer, String attackRange) {
-        textConsumer.accept(Text.translatable(
+    private static void appendAttackRange(Consumer<Component> textConsumer, String attackRange) {
+        textConsumer.accept(Component.translatable(
                 "tooltip.combatextended.weapon.attack_range",
                 attackRange
-        ).formatted(Formatting.DARK_GREEN));
+        ).withStyle(ChatFormatting.DARK_GREEN));
     }
 
     private static boolean isRangedWeapon(ItemStack stack) {
@@ -185,17 +186,13 @@ public final class CombatWeaponTooltip {
     }
 
     private static boolean hasMainHandCombatAttributes(ItemStack stack) {
-        boolean[] found = {false};
+        return attributeDiffersFromBase(stack, Attributes.ATTACK_DAMAGE, CombatBalance.VANILLA_PLAYER_BASE_ATTACK_DAMAGE)
+                || attributeDiffersFromBase(stack, Attributes.ATTACK_SPEED, CombatBalance.VANILLA_PLAYER_BASE_ATTACK_SPEED)
+                || attributeDiffersFromBase(stack, Attributes.ENTITY_INTERACTION_RANGE, CombatBalance.VANILLA_PLAYER_ENTITY_INTERACTION_RANGE);
+    }
 
-        stack.applyAttributeModifiers(EquipmentSlot.MAINHAND, (attribute, modifier) -> {
-            if (attribute.equals(EntityAttributes.ATTACK_DAMAGE)
-                    || attribute.equals(EntityAttributes.ATTACK_SPEED)
-                    || attribute.equals(EntityAttributes.ENTITY_INTERACTION_RANGE)) {
-                found[0] = true;
-            }
-        });
-
-        return found[0];
+    private static boolean attributeDiffersFromBase(ItemStack stack, Holder<Attribute> attribute, double baseValue) {
+        return Double.compare(getMainHandAttributeValue(stack, attribute, baseValue), baseValue) != 0;
     }
 
     private static String format(double value) {

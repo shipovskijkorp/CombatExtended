@@ -1,14 +1,14 @@
 package com.shipovskijkorp.combatextended.mixin.accessor;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(Entity.class)
 public interface EntityDamageCooldownAccessor {
-    @Accessor("timeUntilRegen")
-    int combatExtended$getTimeUntilRegen();
+    @Accessor("invulnerableTime")
+    int combatExtended$getInvulnerableTime();
 
-    @Accessor("timeUntilRegen")
-    void combatExtended$setTimeUntilRegen(int timeUntilRegen);
+    @Accessor("invulnerableTime")
+    void combatExtended$setInvulnerableTime(int invulnerableTime);
 }

@@ -1,9 +1,8 @@
 {
   "required": true,
   "package": "com.shipovskijkorp.combatextended.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_25",
   "mixins": [
-    "accessor.EntityWorldAccessor",
     "accessor.EntityDamageCooldownAccessor",
     "accessor.PersistentProjectileEntityWeaponAccessor",
     "accessor.LivingEntityAttackCooldownAccessor",

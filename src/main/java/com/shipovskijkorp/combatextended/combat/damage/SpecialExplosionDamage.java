@@ -1,10 +1,10 @@
 package com.shipovskijkorp.combatextended.combat.damage;
 
 import com.shipovskijkorp.combatextended.combat.config.CombatBalance;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageTypes;
-import net.minecraft.entity.decoration.EndCrystalEntity;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 
 public final class SpecialExplosionDamage {
     private SpecialExplosionDamage() {
@@ -19,18 +19,18 @@ public final class SpecialExplosionDamage {
     }
 
     public static boolean shouldReducePlayerDamage(DamageSource source) {
-        return source.isOf(DamageTypes.BAD_RESPAWN_POINT) || isEndCrystalExplosion(source);
+        return source.is(DamageTypes.BAD_RESPAWN_POINT) || isEndCrystalExplosion(source);
     }
 
     private static boolean isEndCrystalExplosion(DamageSource source) {
-        if (!source.isOf(DamageTypes.EXPLOSION) && !source.isOf(DamageTypes.PLAYER_EXPLOSION)) {
+        if (!source.is(DamageTypes.EXPLOSION) && !source.is(DamageTypes.PLAYER_EXPLOSION)) {
             return false;
         }
 
-        return isEndCrystal(source.getSource()) || isEndCrystal(source.getAttacker());
+        return isEndCrystal(source.getDirectEntity()) || isEndCrystal(source.getEntity());
     }
 
     private static boolean isEndCrystal(Entity entity) {
-        return entity instanceof EndCrystalEntity;
+        return entity instanceof EndCrystal;
     }
 }

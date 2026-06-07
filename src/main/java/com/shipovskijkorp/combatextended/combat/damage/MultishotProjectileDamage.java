@@ -2,26 +2,26 @@ package com.shipovskijkorp.combatextended.combat.damage;
 
 import com.shipovskijkorp.combatextended.mixin.accessor.PersistentProjectileEntityWeaponAccessor;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.projectile.PersistentProjectileEntity;
-import net.minecraft.item.CrossbowItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 public final class MultishotProjectileDamage {
-    private static final Identifier MULTISHOT_ID = Identifier.ofVanilla("multishot");
+    private static final Identifier MULTISHOT_ID = Identifier.withDefaultNamespace("multishot");
 
     private MultishotProjectileDamage() {
     }
 
     public static boolean shouldBypassDamageCooldown(DamageSource source) {
-        Entity sourceEntity = source.getSource();
-        if (!(sourceEntity instanceof PersistentProjectileEntity projectile)) {
+        Entity sourceEntity = source.getDirectEntity();
+        if (!(sourceEntity instanceof AbstractArrow projectile)) {
             return false;
         }
 
@@ -33,13 +33,13 @@ public final class MultishotProjectileDamage {
     }
 
     private static boolean hasMultishot(ItemStack stack) {
-        ItemEnchantmentsComponent enchantments = stack.getOrDefault(
-                DataComponentTypes.ENCHANTMENTS,
-                ItemEnchantmentsComponent.DEFAULT
+        ItemEnchantments enchantments = stack.getOrDefault(
+                DataComponents.ENCHANTMENTS,
+                ItemEnchantments.EMPTY
         );
 
-        for (Object2IntMap.Entry<RegistryEntry<Enchantment>> entry : enchantments.getEnchantmentEntries()) {
-            if (entry.getKey().matchesId(MULTISHOT_ID) && entry.getIntValue() > 0) {
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(MULTISHOT_ID) && entry.getIntValue() > 0) {
                 return true;
             }
         }

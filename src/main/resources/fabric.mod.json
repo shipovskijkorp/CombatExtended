@@ -3,7 +3,7 @@
   "id": "combatextended",
   "version": "${version}",
   "name": "Combat Extended",
-  "description": "Server-side combat rebalance and anti-abuse layer for Minecraft combat.",
+  "description": "Combat rebalance and anti-abuse layer for Minecraft 26.1.2.",
   "authors": [
     "ShipovskijKorp"
   ],
@@ -16,12 +16,6 @@
   "entrypoints": {
     "main": [
       "com.shipovskijkorp.combatextended.CombatExtended"
-    ],
-    "client": [
-      "com.shipovskijkorp.combatextended.client.CombatExtendedClient"
-    ],
-    "fabric-datagen": [
-      "com.shipovskijkorp.combatextended.client.CombatExtendedDataGenerator"
     ]
   },
   "mixins": [
@@ -32,9 +26,9 @@
     }
   ],
   "depends": {
-    "fabricloader": ">=0.19.2",
-    "minecraft": "~1.21.11",
-    "java": ">=21",
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=25",
     "fabric-api": "*"
   }
 }

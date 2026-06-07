@@ -1,10 +1,10 @@
 package com.shipovskijkorp.combatextended.client.mixin;
 
 import com.shipovskijkorp.combatextended.combat.cooldown.MissCooldowns;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.util.hit.HitResult;
-import org.jetbrains.annotations.Nullable;
+import com.shipovskijkorp.combatextended.mixin.accessor.LivingEntityAttackCooldownAccessor;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -12,50 +12,48 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public abstract class MinecraftClientMissCooldownMixin {
     @Shadow
-    @Nullable
-    public ClientPlayerEntity player;
+    public LocalPlayer player;
 
     @Shadow
-    @Nullable
-    public HitResult crosshairTarget;
+    public HitResult hitResult;
 
     @Shadow
-    private int attackCooldown;
+    protected int missTime;
 
     @Unique
-    private int combatExtended$attackCooldownBeforeAttack;
+    private int combatExtended$missTimeBeforeAttack;
 
-    @Inject(method = "doAttack", at = @At("HEAD"))
-    private void combatExtended$captureAttackCooldownBeforeAttack(CallbackInfoReturnable<Boolean> cir) {
-        this.combatExtended$attackCooldownBeforeAttack = this.attackCooldown;
+    @Inject(method = "startAttack", at = @At("HEAD"))
+    private void combatExtended$captureMissTimeBeforeAttack(CallbackInfoReturnable<Boolean> cir) {
+        this.combatExtended$missTimeBeforeAttack = this.missTime;
     }
 
-    @Inject(method = "doAttack", at = @At("RETURN"))
+    @Inject(method = "startAttack", at = @At("RETURN"))
     private void combatExtended$reduceCooldownAfterMiss(CallbackInfoReturnable<Boolean> cir) {
-        if (this.combatExtended$attackCooldownBeforeAttack > 0) {
+        if (this.combatExtended$missTimeBeforeAttack > 0) {
             return;
         }
 
-        if (this.player == null || this.crosshairTarget == null) {
+        if (this.player == null || this.hitResult == null) {
             return;
         }
 
-        if (this.crosshairTarget.getType() != HitResult.Type.MISS) {
+        if (this.hitResult.getType() != HitResult.Type.MISS) {
             return;
         }
 
-        if (!MissCooldowns.shouldReduceMissCooldown(this.player.getMainHandStack())) {
+        if (!MissCooldowns.shouldReduceMissCooldown(this.player.getMainHandItem())) {
             return;
         }
 
-        if (this.attackCooldown <= 0) {
+        if (this.missTime <= 0) {
             return;
         }
 
-        this.attackCooldown = MissCooldowns.reduceClientMissCooldown(this.attackCooldown);
+        this.missTime = MissCooldowns.reduceClientMissCooldown(this.missTime);
         MissCooldowns.advanceAttackCooldownProgressAfterMiss(this.player);
     }
 }
