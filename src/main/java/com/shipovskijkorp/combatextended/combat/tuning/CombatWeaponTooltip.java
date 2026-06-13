@@ -104,6 +104,14 @@ public final class CombatWeaponTooltip {
         return sanitizeNonNegative(simulatedDamage);
     }
 
+    public static double calculateServerRangedMinimumDamage(ItemStack stack, PlayerEntity player) {
+        return calculateRangedDamageRange(stack, player).minimumDamage();
+    }
+
+    public static double calculateServerRangedMaximumDamage(ItemStack stack, PlayerEntity player) {
+        return calculateRangedDamageRange(stack, player).maximumDamage();
+    }
+
     public static boolean hasCeCompatibility(ItemStack stack) {
         Identifier itemId = Registries.ITEM.getId(stack.getItem());
         String namespace = itemId.getNamespace();
@@ -117,12 +125,11 @@ public final class CombatWeaponTooltip {
     ) {
         appendVanillaMainHandHeader(textConsumer);
 
-        if (CombatTooltipInputState.isServerCalculatorAvailable()) {
-            appendDamage(textConsumer, format(getBestServerBaseAttackDamage(stack, player)));
-        } else if (isRangedWeapon(stack)) {
-            appendDamage(textConsumer, rangedWeaponDamageRange(stack, player));
-        } else {
-            appendDamage(textConsumer, format(calculateClientMeleeAttackDamage(stack, player)));
+        appendDamage(textConsumer, getBestCalculatorDamageDisplay(stack, player));
+
+        if (isRangedWeapon(stack)) {
+            appendTabHint(textConsumer);
+            return;
         }
 
         appendAttackSpeed(textConsumer, format(getMainHandAttributeValue(
@@ -162,7 +169,7 @@ public final class CombatWeaponTooltip {
         if (serverCalculatorAvailable) {
             textConsumer.accept(Text.translatable(
                     "tooltip.combatextended.damage.server_calculator",
-                    format(getBestServerBaseAttackDamage(stack, player))
+                    getServerCalculatorDamageDisplay(stack, player)
             ).formatted(Formatting.GRAY));
         }
 
@@ -188,10 +195,38 @@ public final class CombatWeaponTooltip {
         return ServerDamagePreviewBridge.getPreview(stack);
     }
 
+    private static String getBestCalculatorDamageDisplay(ItemStack stack, PlayerEntity player) {
+        if (CombatTooltipInputState.isServerCalculatorAvailable()) {
+            return getServerCalculatorDamageDisplay(stack, player);
+        }
+
+        return getClientCalculatorDamageDisplay(stack, player);
+    }
+
+    private static String getServerCalculatorDamageDisplay(ItemStack stack, PlayerEntity player) {
+        if (isRangedWeapon(stack)) {
+            return getServerRangedDamageRange(stack, player);
+        }
+
+        return format(getBestServerBaseAttackDamage(stack, player));
+    }
+
     private static double getBestServerBaseAttackDamage(ItemStack stack, PlayerEntity player) {
         return getServerPreview(stack)
                 .map(ServerDamagePreviewBridge.Result::baseAttackDamage)
                 .orElseGet(() -> calculateServerBaseAttackDamage(stack, player));
+    }
+
+    private static String getServerRangedDamageRange(ItemStack stack, PlayerEntity player) {
+        Optional<ServerDamagePreviewBridge.Result> preview = getServerPreview(stack);
+        if (preview.isPresent() && preview.get().rangedWeapon()) {
+            return formatRangedDamage(preview.get().minimumRangedDamage(), preview.get().maximumRangedDamage());
+        }
+
+        return formatRangedDamage(
+                calculateServerRangedMinimumDamage(stack, player),
+                calculateServerRangedMaximumDamage(stack, player)
+        );
     }
 
     private static String getClientCalculatorDamageDisplay(ItemStack stack, PlayerEntity player) {
@@ -327,25 +362,31 @@ public final class CombatWeaponTooltip {
                         .formatted(Formatting.DARK_GRAY));
     }
 
-    private static boolean isRangedWeapon(ItemStack stack) {
+    public static boolean isRangedWeapon(ItemStack stack) {
         Item item = stack.getItem();
         return item instanceof BowItem || item instanceof CrossbowItem;
     }
 
     private static String rangedWeaponDamageRange(ItemStack stack, PlayerEntity player) {
+        RangedDamageRange range = calculateRangedDamageRange(stack, player);
+        return formatRangedDamage(range.minimumDamage(), range.maximumDamage());
+    }
+
+    private static RangedDamageRange calculateRangedDamageRange(ItemStack stack, PlayerEntity player) {
         Item item = stack.getItem();
 
         if (item instanceof CrossbowItem) {
-            return formatRangedDamage(
-                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MINIMUM_ARROW_DAMAGE),
-                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MAXIMUM_ARROW_DAMAGE)
-            );
+            double projectileSpeedMultiplier = getCrossbowProjectileSpeedMultiplier(player);
+            return new RangedDamageRange(
+                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MINIMUM_ARROW_DAMAGE * projectileSpeedMultiplier),
+                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MAXIMUM_ARROW_DAMAGE * projectileSpeedMultiplier)
+            ).sanitized();
         }
 
-        return formatRangedDamage(
+        return new RangedDamageRange(
                 applyRangedDamageModifiers(player, CombatBalance.BOW_MINIMUM_ARROW_DAMAGE),
-                applyRangedDamageModifiers(player, calculateBowMaximumCriticalDamage(stack))
-        );
+                applyRangedDamageModifiers(player, calculateBowMaximumCriticalDamage(stack, player))
+        ).sanitized();
     }
 
     private static double applyRangedDamageModifiers(PlayerEntity player, double damage) {
@@ -353,10 +394,11 @@ public final class CombatWeaponTooltip {
     }
 
     private static String formatRangedDamage(double minimumDamage, double maximumDamage) {
-        return format(minimumDamage) + " - " + format(maximumDamage);
+        RangedDamageRange range = new RangedDamageRange(minimumDamage, maximumDamage).sanitized();
+        return format(range.minimumDamage()) + " - " + format(range.maximumDamage());
     }
 
-    private static double calculateBowMaximumCriticalDamage(ItemStack stack) {
+    private static double calculateBowMaximumCriticalDamage(ItemStack stack, PlayerEntity player) {
         int powerLevel = getEnchantmentLevel(stack, POWER_ID);
         double arrowBaseDamage = CombatBalance.BOW_ARROW_BASE_DAMAGE;
 
@@ -364,10 +406,24 @@ public final class CombatWeaponTooltip {
             arrowBaseDamage += 0.5D * powerLevel + 0.5D;
         }
 
-        int fullDrawDamage = (int) Math.ceil(CombatBalance.BOW_FULL_DRAW_ARROW_SPEED * arrowBaseDamage);
+        int fullDrawDamage = (int) Math.ceil(getBowFullDrawArrowSpeed(player) * arrowBaseDamage);
         int maximumCriticalBonus = fullDrawDamage / 2 + 1;
 
         return fullDrawDamage + maximumCriticalBonus;
+    }
+
+    private static double getBowFullDrawArrowSpeed(PlayerEntity player) {
+        double speed = CombatBalance.BOW_FULL_DRAW_ARROW_SPEED;
+        return player != null ? PuffishSkillsCompatibility.applyBowProjectileSpeedModifiers(player, speed) : speed;
+    }
+
+    private static double getCrossbowProjectileSpeedMultiplier(PlayerEntity player) {
+        if (player == null) {
+            return 1.0D;
+        }
+
+        double modifiedSpeed = PuffishSkillsCompatibility.applyCrossbowProjectileSpeedModifiers(player, 1.0D);
+        return sanitizeNumber(modifiedSpeed, 1.0D);
     }
 
     private static boolean hasMainHandCombatAttributes(ItemStack stack) {
@@ -396,5 +452,18 @@ public final class CombatWeaponTooltip {
 
     private static double sanitizeNonNegative(double value) {
         return Math.max(0.0D, sanitizeNumber(value, 0.0D));
+    }
+
+    private record RangedDamageRange(double minimumDamage, double maximumDamage) {
+        private RangedDamageRange sanitized() {
+            double sanitizedMinimum = sanitizeNonNegative(minimumDamage);
+            double sanitizedMaximum = sanitizeNonNegative(maximumDamage);
+
+            if (sanitizedMinimum > sanitizedMaximum) {
+                return new RangedDamageRange(sanitizedMaximum, sanitizedMinimum);
+            }
+
+            return new RangedDamageRange(sanitizedMinimum, sanitizedMaximum);
+        }
     }
 }

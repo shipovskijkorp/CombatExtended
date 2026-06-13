@@ -27,6 +27,12 @@ public final class ServerDamagePreviewBridge {
         Optional<Result> getPreview(ItemStack stack);
     }
 
-    public record Result(double baseAttackDamage, boolean itemCompatible) {
+    public record Result(
+            double baseAttackDamage,
+            double minimumRangedDamage,
+            double maximumRangedDamage,
+            boolean rangedWeapon,
+            boolean itemCompatible
+    ) {
     }
 }

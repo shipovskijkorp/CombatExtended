@@ -34,7 +34,13 @@ public final class ClientDamagePreviewNetworking {
             }
 
             CacheEntry entry = CACHE.computeIfAbsent(stackKey, ignored -> new CacheEntry());
-            entry.result = new ServerDamagePreviewBridge.Result(payload.baseAttackDamage(), payload.itemCompatible());
+            entry.result = new ServerDamagePreviewBridge.Result(
+                    payload.baseAttackDamage(),
+                    payload.minimumRangedDamage(),
+                    payload.maximumRangedDamage(),
+                    payload.rangedWeapon(),
+                    payload.itemCompatible()
+            );
             entry.lastResponseTick = getClientWorldTime();
         }));
 

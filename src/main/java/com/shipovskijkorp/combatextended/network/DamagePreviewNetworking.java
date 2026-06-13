@@ -18,14 +18,20 @@ public final class DamagePreviewNetworking {
             ServerPlayerEntity player = context.player();
             ItemStack stack = payload.stack().copy();
 
-            context.server().execute(() -> ServerPlayNetworking.send(
-                    player,
-                    new DamagePreviewResponsePayload(
-                            payload.requestId(),
-                            CombatWeaponTooltip.calculateServerBaseAttackDamage(stack, player),
-                            CombatWeaponTooltip.hasCeCompatibility(stack)
-                    )
-            ));
+            context.server().execute(() -> {
+                boolean rangedWeapon = CombatWeaponTooltip.isRangedWeapon(stack);
+                ServerPlayNetworking.send(
+                        player,
+                        new DamagePreviewResponsePayload(
+                                payload.requestId(),
+                                CombatWeaponTooltip.calculateServerBaseAttackDamage(stack, player),
+                                rangedWeapon ? CombatWeaponTooltip.calculateServerRangedMinimumDamage(stack, player) : 0.0D,
+                                rangedWeapon ? CombatWeaponTooltip.calculateServerRangedMaximumDamage(stack, player) : 0.0D,
+                                rangedWeapon,
+                                CombatWeaponTooltip.hasCeCompatibility(stack)
+                        )
+                );
+            });
         });
     }
 }

@@ -31,6 +31,8 @@ public final class PuffishSkillsCompatibility {
     private static final Identifier AXE_DAMAGE_ATTRIBUTE = Identifier.of("puffish_attributes", "axe_damage");
     private static final Identifier TRIDENT_DAMAGE_ATTRIBUTE = Identifier.of("puffish_attributes", "trident_damage");
     private static final Identifier MACE_DAMAGE_ATTRIBUTE = Identifier.of("puffish_attributes", "mace_damage");
+    private static final Identifier BOW_PROJECTILE_SPEED_ATTRIBUTE = Identifier.of("puffish_attributes", "bow_projectile_speed");
+    private static final Identifier CROSSBOW_PROJECTILE_SPEED_ATTRIBUTE = Identifier.of("puffish_attributes", "crossbow_projectile_speed");
 
     private PuffishSkillsCompatibility() {
     }
@@ -66,6 +68,14 @@ public final class PuffishSkillsCompatibility {
 
     public static double applyRangedDamageModifiers(PlayerEntity player, double damage) {
         return applyDynamicAttribute(player, RANGED_DAMAGE_ATTRIBUTE, damage);
+    }
+
+    public static double applyBowProjectileSpeedModifiers(PlayerEntity player, double speed) {
+        return sanitizeNonNegative(applyDynamicAttribute(player, BOW_PROJECTILE_SPEED_ATTRIBUTE, speed), speed);
+    }
+
+    public static double applyCrossbowProjectileSpeedModifiers(PlayerEntity player, double speed) {
+        return sanitizeNonNegative(applyDynamicAttribute(player, CROSSBOW_PROJECTILE_SPEED_ATTRIBUTE, speed), speed);
     }
 
     private static double applyDynamicAttribute(PlayerEntity player, Identifier attributeId, double initialDamage) {
