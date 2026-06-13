@@ -1,5 +1,6 @@
 package com.shipovskijkorp.combatextended.combat.tuning;
 
+import com.shipovskijkorp.combatextended.combat.compatibility.puffishskills.PuffishSkillsCompatibility;
 import com.shipovskijkorp.combatextended.combat.config.CombatBalance;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.component.DataComponentTypes;
@@ -47,7 +48,7 @@ public final class CombatWeaponTooltip {
         appendVanillaMainHandHeader(textConsumer);
 
         if (isRangedWeapon(stack)) {
-            appendDamage(textConsumer, rangedWeaponDamageRange(stack));
+            appendDamage(textConsumer, rangedWeaponDamageRange(stack, player));
             return;
         }
 
@@ -75,6 +76,7 @@ public final class CombatWeaponTooltip {
 
         if (player != null) {
             damage += getStatusEffectAttackDamageBonus(player);
+            damage = PuffishSkillsCompatibility.applyMeleeDamageModifiers(player, damage);
         }
 
         return Math.max(0.0D, damage);
@@ -160,14 +162,28 @@ public final class CombatWeaponTooltip {
         return item instanceof BowItem || item instanceof CrossbowItem;
     }
 
-    private static String rangedWeaponDamageRange(ItemStack stack) {
+    private static String rangedWeaponDamageRange(ItemStack stack, PlayerEntity player) {
         Item item = stack.getItem();
 
         if (item instanceof CrossbowItem) {
-            return CombatBalance.CROSSBOW_ARROW_DAMAGE_TOOLTIP;
+            return formatRangedDamage(
+                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MINIMUM_ARROW_DAMAGE),
+                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MAXIMUM_ARROW_DAMAGE)
+            );
         }
 
-        return CombatBalance.BOW_MINIMUM_ARROW_DAMAGE_TOOLTIP + " - " + format(calculateBowMaximumCriticalDamage(stack));
+        return formatRangedDamage(
+                applyRangedDamageModifiers(player, CombatBalance.BOW_MINIMUM_ARROW_DAMAGE),
+                applyRangedDamageModifiers(player, calculateBowMaximumCriticalDamage(stack))
+        );
+    }
+
+    private static double applyRangedDamageModifiers(PlayerEntity player, double damage) {
+        return player != null ? PuffishSkillsCompatibility.applyRangedDamageModifiers(player, damage) : damage;
+    }
+
+    private static String formatRangedDamage(double minimumDamage, double maximumDamage) {
+        return format(minimumDamage) + " - " + format(maximumDamage);
     }
 
     private static double calculateBowMaximumCriticalDamage(ItemStack stack) {

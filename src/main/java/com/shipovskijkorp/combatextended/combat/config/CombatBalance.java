@@ -14,10 +14,11 @@ public final class CombatBalance {
     public static final double TRIDENT_ATTACK_RANGE = 4D;
 
     /** Vanilla ranged damage tooltip values. These do not change projectile damage. */
-    public static final String BOW_MINIMUM_ARROW_DAMAGE_TOOLTIP = "1";
+    public static final double BOW_MINIMUM_ARROW_DAMAGE = 1.0D;
     public static final double BOW_ARROW_BASE_DAMAGE = 2.0D;
     public static final double BOW_FULL_DRAW_ARROW_SPEED = 3.0D;
-    public static final String CROSSBOW_ARROW_DAMAGE_TOOLTIP = "6 - 11";
+    public static final double CROSSBOW_MINIMUM_ARROW_DAMAGE = 6.0D;
+    public static final double CROSSBOW_MAXIMUM_ARROW_DAMAGE = 11.0D;
 
     /** Vanilla-style attack damage modifiers from status effects. */
     public static final double STRENGTH_ATTACK_DAMAGE_PER_LEVEL = 3.0D;
