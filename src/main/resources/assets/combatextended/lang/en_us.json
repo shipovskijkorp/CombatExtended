@@ -31,14 +31,16 @@
   "screen.combatextended.compatibility.list.white": "White",
   "screen.combatextended.compatibility.list.neutral": "Neutral",
   "screen.combatextended.compatibility.list.black": "Black",
-  "screen.combatextended.compatibility.columns.actions": "W  N  B  R",
+  "screen.combatextended.compatibility.columns.actions": "✓  W  N  B  R",
   "screen.combatextended.compatibility.page": "Page %s/%s",
   "screen.combatextended.compatibility.empty": "This list is empty",
-  "screen.combatextended.compatibility.source.mod_rule": "Mod rule. W/N/B changes the list.",
+  "screen.combatextended.compatibility.source.mod_rule": "Mod rule.",
   "screen.combatextended.compatibility.source.item_rule": "Item rule. R resets the override.",
-  "screen.combatextended.compatibility.source.inherited_mod_rule": "Inherited from mod rule: %s.",
-  "screen.combatextended.compatibility.source.default_neutral": "Default: neutral list. Mod: %s.",
-  "screen.combatextended.compatibility.source.built_in": "Built-in CE compatibility. Mod: %s.",
+  "screen.combatextended.compatibility.source.inherited_mod_rule": "Inherited from mod rule.",
+  "screen.combatextended.compatibility.source.default_neutral": "Default: neutral list.",
+  "screen.combatextended.compatibility.source.built_in": "Built-in/API CE compatibility.",
   "tooltip.combatextended.warning.mod_marked_compatible_by_user": "The mod is marked as compatible in the list.",
-  "tooltip.combatextended.warning.item_marked_compatible_by_user": "The item is marked as compatible in the list."
+  "tooltip.combatextended.warning.item_marked_compatible_by_user": "The item is marked as compatible in the list.",
+  "screen.combatextended.compatibility.source.internal_neutral_item": "Internal CE exception: displayed as not compatible.",
+  "screen.combatextended.compatibility.compatible_hint": "This mod/item is already compatible with CE. No action is required: white and neutral lists will not change this status, while the black list will disable the CE tooltip."
 }

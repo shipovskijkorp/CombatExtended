@@ -1,6 +1,8 @@
 package com.shipovskijkorp.combatextended.combat.tuning;
 
 import com.shipovskijkorp.combatextended.CombatExtended;
+import com.shipovskijkorp.combatextended.api.CombatExtendedApi;
+import com.shipovskijkorp.combatextended.api.CombatExtendedTooltipPhase;
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CombatCompatibilityConfig;
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecision;
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecisionSource;
@@ -107,6 +109,7 @@ public final class CombatWeaponTooltip {
         if (player != null) {
             simulatedDamage = PuffishSkillsCompatibility.applyMeleeDamageModifiers(player, stack, simulatedDamage);
         }
+        simulatedDamage = CombatExtendedApi.modifyMeleeDamage(player, stack, simulatedDamage);
 
         return sanitizeNonNegative(simulatedDamage);
     }
@@ -133,6 +136,7 @@ public final class CombatWeaponTooltip {
         appendDamage(textConsumer, getBestCalculatorDamageDisplay(stack, player));
 
         if (isRangedWeapon(stack)) {
+            CombatExtendedApi.appendTooltip(stack, player, textConsumer, CombatExtendedTooltipPhase.NORMAL);
             appendTabHint(textConsumer);
             return;
         }
@@ -147,6 +151,7 @@ public final class CombatWeaponTooltip {
                 EntityAttributes.ENTITY_INTERACTION_RANGE,
                 CombatBalance.VANILLA_PLAYER_ENTITY_INTERACTION_RANGE
         )));
+        CombatExtendedApi.appendTooltip(stack, player, textConsumer, CombatExtendedTooltipPhase.NORMAL);
         appendTabHint(textConsumer);
     }
 
@@ -199,6 +204,8 @@ public final class CombatWeaponTooltip {
             textConsumer.accept(Text.translatable("tooltip.combatextended.warning.no_server_mod").formatted(Formatting.RED));
             textConsumer.accept(Text.translatable("tooltip.combatextended.warning.values_may_differ").formatted(Formatting.RED));
         }
+
+        CombatExtendedApi.appendTooltip(stack, player, textConsumer, CombatExtendedTooltipPhase.CE_DESCRIPTION);
 
         textConsumer.accept(Text.empty());
         textConsumer.accept(createCtrlOriginalValuesHint());
@@ -263,6 +270,7 @@ public final class CombatWeaponTooltip {
             damage += getStatusEffectAttackDamageBonus(player);
             damage = PuffishSkillsCompatibility.applyMeleeDamageModifiers(player, stack, damage);
         }
+        damage = CombatExtendedApi.modifyMeleeDamage(player, stack, damage);
 
         return sanitizeNonNegative(damage);
     }
@@ -412,19 +420,21 @@ public final class CombatWeaponTooltip {
         if (item instanceof CrossbowItem) {
             double projectileSpeedMultiplier = getCrossbowProjectileSpeedMultiplier(player);
             return new RangedDamageRange(
-                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MINIMUM_ARROW_DAMAGE * projectileSpeedMultiplier),
-                    applyRangedDamageModifiers(player, CombatBalance.CROSSBOW_MAXIMUM_ARROW_DAMAGE * projectileSpeedMultiplier)
+                    applyRangedDamageModifiers(player, stack, CombatBalance.CROSSBOW_MINIMUM_ARROW_DAMAGE * projectileSpeedMultiplier),
+                    applyRangedDamageModifiers(player, stack, CombatBalance.CROSSBOW_MAXIMUM_ARROW_DAMAGE * projectileSpeedMultiplier)
             ).sanitized();
         }
 
         return new RangedDamageRange(
-                applyRangedDamageModifiers(player, CombatBalance.BOW_MINIMUM_ARROW_DAMAGE),
-                applyRangedDamageModifiers(player, calculateBowMaximumCriticalDamage(stack, player))
+                applyRangedDamageModifiers(player, stack, CombatBalance.BOW_MINIMUM_ARROW_DAMAGE),
+                applyRangedDamageModifiers(player, stack, calculateBowMaximumCriticalDamage(stack, player))
         ).sanitized();
     }
 
-    private static double applyRangedDamageModifiers(PlayerEntity player, double damage) {
-        return player != null ? PuffishSkillsCompatibility.applyRangedDamageModifiers(player, damage) : damage;
+    private static double applyRangedDamageModifiers(PlayerEntity player, ItemStack stack, double damage) {
+        double modifiedDamage = player != null ? PuffishSkillsCompatibility.applyRangedDamageModifiers(player, damage) : damage;
+        modifiedDamage = CombatExtendedApi.modifyRangedDamage(player, stack, modifiedDamage);
+        return sanitizeNonNegative(modifiedDamage);
     }
 
     private static String formatRangedDamage(double minimumDamage, double maximumDamage) {

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.shipovskijkorp.combatextended.CombatExtended;
+import com.shipovskijkorp.combatextended.api.CombatExtendedApi;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -115,6 +116,12 @@ public final class CombatCompatibilityConfig {
         save();
     }
 
+    public static synchronized void clearModRule(String modId) {
+        ensureLoaded();
+        DATA.mods.remove(normalizeKey(modId));
+        save();
+    }
+
     public static synchronized void clearItemRule(Identifier itemId) {
         ensureLoaded();
         DATA.items.remove(itemId.toString());
@@ -133,19 +140,60 @@ public final class CombatCompatibilityConfig {
         ensureLoaded();
 
         String itemKey = itemId.toString();
+        String namespace = itemId.getNamespace();
         CompatibilityListType itemRule = DATA.items.get(itemKey);
+        CompatibilityListType modRule = DATA.mods.get(normalizeKey(namespace));
+        boolean internalNeutralItem = CombatExtendedApi.isCompatibilityNeutralItem(itemId);
+        boolean registeredCompatibleItem = CombatExtendedApi.isCompatibleItem(itemId);
+        boolean lockedByInternalRule = internalNeutralItem || registeredCompatibleItem;
+
+        if (itemRule == CompatibilityListType.BLACKLIST) {
+            return new CompatibilityDecision(CompatibilityListType.BLACKLIST, CompatibilityDecisionSource.USER_ITEM_RULE);
+        }
+
+        if (itemRule != null && !lockedByInternalRule) {
+            return new CompatibilityDecision(itemRule, CompatibilityDecisionSource.USER_ITEM_RULE);
+        }
+
+        if (modRule == CompatibilityListType.BLACKLIST) {
+            return new CompatibilityDecision(CompatibilityListType.BLACKLIST, CompatibilityDecisionSource.USER_MOD_RULE);
+        }
+
+        if (internalNeutralItem) {
+            return new CompatibilityDecision(CompatibilityListType.NEUTRAL, CompatibilityDecisionSource.INTERNAL_NEUTRAL_ITEM);
+        }
+
+        if (registeredCompatibleItem) {
+            return new CompatibilityDecision(CompatibilityListType.WHITELIST, CompatibilityDecisionSource.BUILT_IN_COMPATIBILITY);
+        }
+
         if (itemRule != null) {
             return new CompatibilityDecision(itemRule, CompatibilityDecisionSource.USER_ITEM_RULE);
         }
 
-        String namespace = itemId.getNamespace();
-        CompatibilityListType modRule = DATA.mods.get(normalizeKey(namespace));
+
         if (modRule != null) {
             return new CompatibilityDecision(modRule, CompatibilityDecisionSource.USER_MOD_RULE);
         }
 
-        if (hasBuiltInCompatibility(itemId)) {
+        return new CompatibilityDecision(CompatibilityListType.NEUTRAL, CompatibilityDecisionSource.DEFAULT_NEUTRAL);
+    }
+
+    public static synchronized CompatibilityDecision resolveMod(String modId) {
+        ensureLoaded();
+
+        String normalizedModId = normalizeKey(modId);
+        CompatibilityListType modRule = DATA.mods.get(normalizedModId);
+        if (modRule == CompatibilityListType.BLACKLIST) {
+            return new CompatibilityDecision(CompatibilityListType.BLACKLIST, CompatibilityDecisionSource.USER_MOD_RULE);
+        }
+
+        if (CombatExtendedApi.isCompatibleMod(normalizedModId)) {
             return new CompatibilityDecision(CompatibilityListType.WHITELIST, CompatibilityDecisionSource.BUILT_IN_COMPATIBILITY);
+        }
+
+        if (modRule != null) {
+            return new CompatibilityDecision(modRule, CompatibilityDecisionSource.USER_MOD_RULE);
         }
 
         return new CompatibilityDecision(CompatibilityListType.NEUTRAL, CompatibilityDecisionSource.DEFAULT_NEUTRAL);
@@ -159,17 +207,16 @@ public final class CombatCompatibilityConfig {
         return resolve(stack).isCompatibleForTooltipStatus();
     }
 
-    public static boolean hasBuiltInCompatibility(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return false;
-        }
-
-        return hasBuiltInCompatibility(Registries.ITEM.getId(stack.getItem()));
+    public static boolean hasRegisteredCompatibility(String modId) {
+        return CombatExtendedApi.isCompatibleMod(modId);
     }
 
-    private static boolean hasBuiltInCompatibility(Identifier itemId) {
-        String namespace = itemId.getNamespace();
-        return namespace.equals("minecraft") || namespace.equals(CombatExtended.MOD_ID);
+    public static boolean hasRegisteredCompatibility(Identifier itemId) {
+        return CombatExtendedApi.isCompatibleItem(itemId);
+    }
+
+    public static boolean isInternalNeutralItem(Identifier itemId) {
+        return CombatExtendedApi.isCompatibilityNeutralItem(itemId);
     }
 
     private static void ensureLoaded() {

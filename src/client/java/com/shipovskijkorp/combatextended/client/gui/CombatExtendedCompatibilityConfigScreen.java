@@ -19,13 +19,12 @@ import net.minecraft.util.math.MathHelper;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 
 public class CombatExtendedCompatibilityConfigScreen extends Screen {
-    private static final int ROW_HEIGHT = 24;
-    private static final int HEADER_HEIGHT = 74;
+    private static final int ROW_HEIGHT = 26;
+    private static final int HEADER_HEIGHT = 76;
     private static final int FOOTER_HEIGHT = 30;
+    private static final String COMPATIBILITY_MARK = "✓";
 
     private final Screen parent;
     private Section section = Section.MODS;
@@ -96,22 +95,43 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
             Row row = rows.get(index);
             int rowY = y + (index - start) * ROW_HEIGHT;
 
-            addDrawableChild(ButtonWidget.builder(Text.literal("W"), button -> setRule(row, CompatibilityListType.WHITELIST))
-                    .dimensions(width - 130, rowY + 1, 28, 20)
-                    .build());
-            addDrawableChild(ButtonWidget.builder(Text.literal("N"), button -> setRule(row, CompatibilityListType.NEUTRAL))
-                    .dimensions(width - 98, rowY + 1, 28, 20)
-                    .build());
-            addDrawableChild(ButtonWidget.builder(Text.literal("B"), button -> setRule(row, CompatibilityListType.BLACKLIST))
-                    .dimensions(width - 66, rowY + 1, 28, 20)
-                    .build());
+            ButtonWidget white = ButtonWidget.builder(Text.literal("W"), button -> setRule(row, CompatibilityListType.WHITELIST))
+                    .dimensions(width - 130, rowY + 2, 28, 20)
+                    .build();
+            ButtonWidget neutral = ButtonWidget.builder(Text.literal("N"), button -> setRule(row, CompatibilityListType.NEUTRAL))
+                    .dimensions(width - 98, rowY + 2, 28, 20)
+                    .build();
+            ButtonWidget black = ButtonWidget.builder(Text.literal("B"), button -> setRule(row, CompatibilityListType.BLACKLIST))
+                    .dimensions(width - 66, rowY + 2, 28, 20)
+                    .build();
+
+            boolean lockedByInternalCompatibility = row.hasRegisteredCompatibility || row.internalNeutralItem;
+            if (lockedByInternalCompatibility && !row.decision.isBlacklisted()) {
+                white.active = false;
+                neutral.active = false;
+            } else {
+                white.active = row.decision.type() != CompatibilityListType.WHITELIST;
+                neutral.active = row.decision.type() != CompatibilityListType.NEUTRAL;
+            }
+            black.active = row.decision.type() != CompatibilityListType.BLACKLIST;
+
+            addDrawableChild(white);
+            addDrawableChild(neutral);
+            addDrawableChild(black);
 
             if (row.kind == RowKind.ITEM && CombatCompatibilityConfig.getItemRule(row.id).isPresent()) {
                 addDrawableChild(ButtonWidget.builder(Text.literal("R"), button -> {
                             CombatCompatibilityConfig.clearItemRule(row.id);
                             rebuild();
                         })
-                        .dimensions(width - 34, rowY + 1, 22, 20)
+                        .dimensions(width - 34, rowY + 2, 22, 20)
+                        .build());
+            } else if (row.kind == RowKind.MOD && CombatCompatibilityConfig.getModRule(row.modId).isPresent()) {
+                addDrawableChild(ButtonWidget.builder(Text.literal("R"), button -> {
+                            CombatCompatibilityConfig.clearModRule(row.modId);
+                            rebuild();
+                        })
+                        .dimensions(width - 34, rowY + 2, 22, 20)
                         .build());
             }
         }
@@ -138,6 +158,17 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
     }
 
     private void setRule(Row row, CompatibilityListType type) {
+        boolean lockedByInternalCompatibility = row.hasRegisteredCompatibility || row.internalNeutralItem;
+        if (lockedByInternalCompatibility && type != CompatibilityListType.BLACKLIST) {
+            if (row.kind == RowKind.MOD) {
+                CombatCompatibilityConfig.clearModRule(row.modId);
+            } else {
+                CombatCompatibilityConfig.clearItemRule(row.id);
+            }
+            rebuild();
+            return;
+        }
+
         if (row.kind == RowKind.MOD) {
             CombatCompatibilityConfig.setModRule(row.modId, type);
         } else {
@@ -162,9 +193,8 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
                 .sorted(Comparator.comparing(container -> container.getMetadata().getId()))
                 .forEach(container -> {
                     String modId = container.getMetadata().getId();
-                    CompatibilityListType type = CombatCompatibilityConfig.getModRule(modId)
-                            .orElse(CompatibilityListType.NEUTRAL);
-                    if (type != selectedList) {
+                    CompatibilityDecision decision = CombatCompatibilityConfig.resolveMod(modId);
+                    if (decision.type() != selectedList) {
                         return;
                     }
 
@@ -173,7 +203,7 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
                         displayName = modId;
                     }
 
-                    result.add(Row.mod(modId, displayName, type));
+                    result.add(Row.mod(modId, displayName, decision, CombatCompatibilityConfig.hasRegisteredCompatibility(modId)));
                 });
 
         return result;
@@ -200,7 +230,14 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
                             })
                             .orElse(id.getNamespace());
 
-                    result.add(Row.item(id, new ItemStack(item), modName, decision));
+                    result.add(Row.item(
+                            id,
+                            new ItemStack(item),
+                            modName,
+                            decision,
+                            CombatCompatibilityConfig.hasRegisteredCompatibility(id),
+                            CombatCompatibilityConfig.isInternalNeutralItem(id)
+                    ));
                 });
 
         return result;
@@ -236,13 +273,34 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
             int rowY = y + (index - start) * ROW_HEIGHT;
             int textX = 16;
 
+            if ((index & 1) == 0) {
+                context.fill(8, rowY, width - 8, rowY + ROW_HEIGHT - 1, 0x22000000);
+            }
+
             if (row.stack != null) {
-                context.drawItem(row.stack, textX, rowY + 2);
+                context.drawItem(row.stack, textX, rowY + 4);
                 textX += 22;
             }
 
-            context.drawTextWithShadow(textRenderer, row.title(), textX, rowY + 2, row.titleColor());
-            context.drawTextWithShadow(textRenderer, row.subtitle(), textX, rowY + 13, 0x808080);
+            int maxTextWidth = Math.max(40, width - textX - 180);
+            Text titleText = textRenderer.getWidth(row.title()) > maxTextWidth
+                    ? Text.literal(textRenderer.trimToWidth(row.title().getString(), maxTextWidth - textRenderer.getWidth("...")) + "...")
+                    : row.title();
+            Text subtitleText = textRenderer.getWidth(row.subtitle()) > maxTextWidth
+                    ? Text.literal(textRenderer.trimToWidth(row.subtitle().getString(), maxTextWidth - textRenderer.getWidth("...")) + "...")
+                    : row.subtitle();
+
+            context.drawTextWithShadow(textRenderer, titleText, textX, rowY + 3, row.titleColor());
+            context.drawTextWithShadow(textRenderer, subtitleText, textX, rowY + 15, 0x808080);
+
+            if (row.hasRegisteredCompatibility) {
+                int iconX = width - 158;
+                int iconY = rowY + 8;
+                context.drawTextWithShadow(textRenderer, Text.literal(COMPATIBILITY_MARK), iconX, iconY, 0x55FF55);
+                if (mouseX >= iconX - 2 && mouseX <= iconX + 12 && mouseY >= iconY - 2 && mouseY <= iconY + 12) {
+                    context.drawTooltip(textRenderer, Text.translatable("screen.combatextended.compatibility.compatible_hint"), mouseX, mouseY);
+                }
+            }
         }
     }
 
@@ -295,34 +353,51 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
             ItemStack stack,
             Text title,
             Text subtitle,
-            CompatibilityDecision decision
+            CompatibilityDecision decision,
+            boolean hasRegisteredCompatibility,
+            boolean internalNeutralItem
     ) {
-        private static Row mod(String modId, String name, CompatibilityListType type) {
-            CompatibilityDecision decision = new CompatibilityDecision(type, CompatibilityDecisionSource.USER_MOD_RULE);
+        private static Row mod(String modId, String name, CompatibilityDecision decision, boolean hasRegisteredCompatibility) {
             return new Row(
                     RowKind.MOD,
                     modId,
                     Identifier.of(modId, "_mod"),
                     null,
-                    Text.literal(name + " (" + modId + ")"),
-                    Text.translatable("screen.combatextended.compatibility.source.mod_rule"),
-                    decision
+                    Text.literal(name),
+                    Text.literal("modid: " + modId + " | ").append(Text.translatable(sourceTranslationKey(decision))),
+                    decision,
+                    hasRegisteredCompatibility,
+                    false
             );
         }
 
-        private static Row item(Identifier id, ItemStack stack, String modName, CompatibilityDecision decision) {
+        private static Row item(
+                Identifier id,
+                ItemStack stack,
+                String modName,
+                CompatibilityDecision decision,
+                boolean hasRegisteredCompatibility,
+                boolean internalNeutralItem
+        ) {
             return new Row(
                     RowKind.ITEM,
                     id.getNamespace(),
                     id,
                     stack,
-                    Text.literal(id.toString()),
-                    Text.translatable(sourceTranslationKey(decision), modName),
-                    decision
+                    stack.getName(),
+                    Text.literal("item: " + id + " | mod: " + modName + " (" + id.getNamespace() + ") | ")
+                            .append(Text.translatable(sourceTranslationKey(decision))),
+                    decision,
+                    hasRegisteredCompatibility,
+                    internalNeutralItem
             );
         }
 
         private int titleColor() {
+            if (decision.isBuiltInCompatible()) {
+                return 0x55FF55;
+            }
+
             return switch (decision.type()) {
                 case WHITELIST -> 0xFFFF55;
                 case NEUTRAL -> 0xAAAAAA;
@@ -333,8 +408,9 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
         private static String sourceTranslationKey(CompatibilityDecision decision) {
             return switch (decision.source()) {
                 case BUILT_IN_COMPATIBILITY -> "screen.combatextended.compatibility.source.built_in";
+                case INTERNAL_NEUTRAL_ITEM -> "screen.combatextended.compatibility.source.internal_neutral_item";
                 case USER_ITEM_RULE -> "screen.combatextended.compatibility.source.item_rule";
-                case USER_MOD_RULE -> "screen.combatextended.compatibility.source.inherited_mod_rule";
+                case USER_MOD_RULE -> "screen.combatextended.compatibility.source.mod_rule";
                 case DEFAULT_NEUTRAL -> "screen.combatextended.compatibility.source.default_neutral";
             };
         }

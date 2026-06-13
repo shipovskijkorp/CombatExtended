@@ -12,6 +12,10 @@ public record CompatibilityDecision(
         return source == CompatibilityDecisionSource.BUILT_IN_COMPATIBILITY;
     }
 
+    public boolean isInternalNeutralItem() {
+        return source == CompatibilityDecisionSource.INTERNAL_NEUTRAL_ITEM;
+    }
+
     public boolean isUserWhitelisted() {
         return type == CompatibilityListType.WHITELIST
                 && (source == CompatibilityDecisionSource.USER_ITEM_RULE
