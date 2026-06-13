@@ -2,13 +2,17 @@ package com.shipovskijkorp.combatextended.client.gui;
 
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CombatCompatibilityConfig;
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecision;
-import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecisionSource;
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityListType;
+import com.shipovskijkorp.combatextended.CombatExtended;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -16,15 +20,23 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class CombatExtendedCompatibilityConfigScreen extends Screen {
     private static final int ROW_HEIGHT = 26;
     private static final int HEADER_HEIGHT = 76;
     private static final int FOOTER_HEIGHT = 30;
     private static final String COMPATIBILITY_MARK = "✓";
+    private static final Map<String, Optional<ModIcon>> MOD_ICON_CACHE = new HashMap<>();
 
     private final Screen parent;
     private Section section = Section.MODS;
@@ -203,7 +215,7 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
                         displayName = modId;
                     }
 
-                    result.add(Row.mod(modId, displayName, decision, CombatCompatibilityConfig.hasRegisteredCompatibility(modId)));
+                    result.add(Row.mod(modId, displayName, getModIcon(container), decision, CombatCompatibilityConfig.hasRegisteredCompatibility(modId)));
                 });
 
         return result;
@@ -222,18 +234,9 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
                         return;
                     }
 
-                    String modName = FabricLoader.getInstance().getModContainer(id.getNamespace())
-                            .map(ModContainer::getMetadata)
-                            .map(metadata -> {
-                                String name = metadata.getName();
-                                return name == null || name.isBlank() ? id.getNamespace() : name;
-                            })
-                            .orElse(id.getNamespace());
-
                     result.add(Row.item(
                             id,
                             new ItemStack(item),
-                            modName,
                             decision,
                             CombatCompatibilityConfig.hasRegisteredCompatibility(id),
                             CombatCompatibilityConfig.isInternalNeutralItem(id)
@@ -255,16 +258,16 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float deltaTicks) {
         super.render(context, mouseX, mouseY, deltaTicks);
 
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 10, 0xFFFFFF);
-        context.drawTextWithShadow(textRenderer, Text.translatable("screen.combatextended.compatibility.columns.actions"), width - 128, 58, 0xA0A0A0);
-        context.drawTextWithShadow(textRenderer, Text.translatable("screen.combatextended.compatibility.page", page + 1, getMaxPage() + 1), 78, height - 19, 0xA0A0A0);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 10, 0xFFFFFFFF);
+        context.drawTextWithShadow(textRenderer, Text.translatable("screen.combatextended.compatibility.columns.actions"), width - 128, 58, 0xFFA0A0A0);
+        context.drawTextWithShadow(textRenderer, Text.translatable("screen.combatextended.compatibility.page", page + 1, getMaxPage() + 1), 78, height - 19, 0xFFA0A0A0);
 
         int start = page * rowsPerPage;
         int end = Math.min(rows.size(), start + rowsPerPage);
         int y = HEADER_HEIGHT;
 
         if (rows.isEmpty()) {
-            context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.combatextended.compatibility.empty"), width / 2, y + 24, 0xA0A0A0);
+            context.drawCenteredTextWithShadow(textRenderer, Text.translatable("screen.combatextended.compatibility.empty"), width / 2, y + 24, 0xFFA0A0A0);
             return;
         }
 
@@ -280,6 +283,12 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
             if (row.stack != null) {
                 context.drawItem(row.stack, textX, rowY + 4);
                 textX += 22;
+            } else if (row.modIcon != null) {
+                drawModIcon(context, row.modIcon, textX, rowY + 5);
+                textX += 22;
+            } else if (row.kind == RowKind.MOD) {
+                drawFallbackModIcon(context, row.modId, textX, rowY + 5);
+                textX += 22;
             }
 
             int maxTextWidth = Math.max(40, width - textX - 180);
@@ -291,12 +300,12 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
                     : row.subtitle();
 
             context.drawTextWithShadow(textRenderer, titleText, textX, rowY + 3, row.titleColor());
-            context.drawTextWithShadow(textRenderer, subtitleText, textX, rowY + 15, 0x808080);
+            context.drawTextWithShadow(textRenderer, subtitleText, textX, rowY + 15, 0xFF808080);
 
             if (row.hasRegisteredCompatibility) {
                 int iconX = width - 158;
                 int iconY = rowY + 8;
-                context.drawTextWithShadow(textRenderer, Text.literal(COMPATIBILITY_MARK), iconX, iconY, 0x55FF55);
+                context.drawTextWithShadow(textRenderer, Text.literal(COMPATIBILITY_MARK), iconX, iconY, 0xFF55FF55);
                 if (mouseX >= iconX - 2 && mouseX <= iconX + 12 && mouseY >= iconY - 2 && mouseY <= iconY + 12) {
                     context.drawTooltip(textRenderer, Text.translatable("screen.combatextended.compatibility.compatible_hint"), mouseX, mouseY);
                 }
@@ -328,12 +337,62 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
         }
     }
 
+    private Optional<ModIcon> getModIcon(ModContainer container) {
+        String modId = container.getMetadata().getId();
+        Optional<ModIcon> cached = MOD_ICON_CACHE.get(modId);
+        if (cached != null) {
+            return cached;
+        }
+
+        Optional<ModIcon> icon = container.getMetadata().getIconPath(64)
+                .or(() -> container.getMetadata().getIconPath(32))
+                .or(() -> container.getMetadata().getIconPath(16))
+                .flatMap(iconPath -> loadModIcon(modId, container, iconPath));
+        MOD_ICON_CACHE.put(modId, icon);
+        return icon;
+    }
+
+    private Optional<ModIcon> loadModIcon(String modId, ModContainer container, String iconPath) {
+        Optional<Path> path = container.findPath(iconPath);
+        if (path.isEmpty()) {
+            return Optional.empty();
+        }
+
+        try (InputStream stream = Files.newInputStream(path.get())) {
+            NativeImage image = NativeImage.read(stream);
+            Identifier textureId = Identifier.of(CombatExtended.MOD_ID, "mod_icons/" + sanitizeIdentifierPath(modId));
+            NativeImageBackedTexture texture = new NativeImageBackedTexture(() -> "Combat Extended mod icon: " + modId, image);
+            MinecraftClient.getInstance().getTextureManager().registerTexture(textureId, texture);
+            return Optional.of(new ModIcon(textureId, Math.max(1, image.getWidth()), Math.max(1, image.getHeight())));
+        } catch (IOException | RuntimeException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private String sanitizeIdentifierPath(String value) {
+        return value.toLowerCase().replaceAll("[^a-z0-9_./-]", "_");
+    }
+
+    private void drawModIcon(DrawContext context, ModIcon icon, int x, int y) {
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, icon.texture, x, y, 0.0F, 0.0F, 16, 16, icon.width, icon.height, icon.width, icon.height);
+    }
+
+    private void drawFallbackModIcon(DrawContext context, String modId, int x, int y) {
+        context.fill(x, y, x + 16, y + 16, 0xFF202020);
+        context.fill(x + 1, y + 1, x + 15, y + 15, 0xFF404040);
+        String letter = modId == null || modId.isBlank() ? "?" : modId.substring(0, 1).toUpperCase();
+        context.drawCenteredTextWithShadow(textRenderer, letter, x + 8, y + 4, 0xFFFFFFFF);
+    }
+
     private Text getListName(CompatibilityListType type) {
         return switch (type) {
             case WHITELIST -> Text.translatable("screen.combatextended.compatibility.list.white");
             case NEUTRAL -> Text.translatable("screen.combatextended.compatibility.list.neutral");
             case BLACKLIST -> Text.translatable("screen.combatextended.compatibility.list.black");
         };
+    }
+
+    private record ModIcon(Identifier texture, int width, int height) {
     }
 
     private enum Section {
@@ -351,18 +410,20 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
             String modId,
             Identifier id,
             ItemStack stack,
+            ModIcon modIcon,
             Text title,
             Text subtitle,
             CompatibilityDecision decision,
             boolean hasRegisteredCompatibility,
             boolean internalNeutralItem
     ) {
-        private static Row mod(String modId, String name, CompatibilityDecision decision, boolean hasRegisteredCompatibility) {
+        private static Row mod(String modId, String name, Optional<ModIcon> modIcon, CompatibilityDecision decision, boolean hasRegisteredCompatibility) {
             return new Row(
                     RowKind.MOD,
                     modId,
                     Identifier.of(modId, "_mod"),
                     null,
+                    modIcon.orElse(null),
                     Text.literal(name),
                     Text.literal("modid: " + modId + " | ").append(Text.translatable(sourceTranslationKey(decision))),
                     decision,
@@ -374,7 +435,6 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
         private static Row item(
                 Identifier id,
                 ItemStack stack,
-                String modName,
                 CompatibilityDecision decision,
                 boolean hasRegisteredCompatibility,
                 boolean internalNeutralItem
@@ -384,9 +444,9 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
                     id.getNamespace(),
                     id,
                     stack,
+                    null,
                     stack.getName(),
-                    Text.literal("item: " + id + " | mod: " + modName + " (" + id.getNamespace() + ") | ")
-                            .append(Text.translatable(sourceTranslationKey(decision))),
+                    Text.literal("item id: " + id + " | ").append(Text.translatable(sourceTranslationKey(decision))),
                     decision,
                     hasRegisteredCompatibility,
                     internalNeutralItem
@@ -395,13 +455,13 @@ public class CombatExtendedCompatibilityConfigScreen extends Screen {
 
         private int titleColor() {
             if (decision.isBuiltInCompatible()) {
-                return 0x55FF55;
+                return 0xFF55FF55;
             }
 
             return switch (decision.type()) {
-                case WHITELIST -> 0xFFFF55;
-                case NEUTRAL -> 0xAAAAAA;
-                case BLACKLIST -> 0xFF5555;
+                case WHITELIST -> 0xFFFFFF55;
+                case NEUTRAL -> 0xFFAAAAAA;
+                case BLACKLIST -> 0xFFFF5555;
             };
         }
 
