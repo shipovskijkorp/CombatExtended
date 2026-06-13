@@ -1,6 +1,7 @@
 package com.shipovskijkorp.combatextended;
 
 import com.shipovskijkorp.combatextended.combat.core.CombatModules;
+import com.shipovskijkorp.combatextended.network.DamagePreviewNetworking;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ public class CombatExtended implements ModInitializer {
     @Override
     public void onInitialize() {
         CombatModules.init();
+        DamagePreviewNetworking.init();
         LOGGER.info("Combat Extended initialized.");
     }
 }

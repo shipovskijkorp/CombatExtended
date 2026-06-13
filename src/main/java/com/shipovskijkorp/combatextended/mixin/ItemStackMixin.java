@@ -27,6 +27,11 @@ public abstract class ItemStackMixin {
             return;
         }
 
+        if (CombatWeaponTooltip.shouldShowOriginalValues()) {
+            CombatWeaponTooltip.appendOriginalValuesHeader(textConsumer);
+            return;
+        }
+
         CombatWeaponTooltip.appendVanillaStyleAttributes(stack, player, textConsumer);
         ci.cancel();
     }
