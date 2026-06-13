@@ -1,6 +1,9 @@
 package com.shipovskijkorp.combatextended.combat.tuning;
 
 import com.shipovskijkorp.combatextended.CombatExtended;
+import com.shipovskijkorp.combatextended.combat.compatibility.config.CombatCompatibilityConfig;
+import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecision;
+import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecisionSource;
 import com.shipovskijkorp.combatextended.combat.compatibility.puffishskills.PuffishSkillsCompatibility;
 import com.shipovskijkorp.combatextended.combat.config.CombatBalance;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -40,6 +43,10 @@ public final class CombatWeaponTooltip {
     }
 
     public static boolean shouldReplaceAttributeTooltip(ItemStack stack) {
+        if (!CombatCompatibilityConfig.shouldShowCustomTooltip(stack)) {
+            return false;
+        }
+
         if (isRangedWeapon(stack)) {
             return true;
         }
@@ -113,9 +120,7 @@ public final class CombatWeaponTooltip {
     }
 
     public static boolean hasCeCompatibility(ItemStack stack) {
-        Identifier itemId = Registries.ITEM.getId(stack.getItem());
-        String namespace = itemId.getNamespace();
-        return namespace.equals("minecraft") || namespace.equals(CombatExtended.MOD_ID);
+        return CombatCompatibilityConfig.hasCeCompatibility(stack);
     }
 
     private static void appendNormalTooltip(
@@ -150,12 +155,11 @@ public final class CombatWeaponTooltip {
             PlayerEntity player,
             Consumer<Text> textConsumer
     ) {
-        boolean itemCompatible = getServerPreview(stack)
-                .map(ServerDamagePreviewBridge.Result::itemCompatible)
-                .orElseGet(() -> hasCeCompatibility(stack));
+        CompatibilityDecision compatibilityDecision = CombatCompatibilityConfig.resolve(stack);
+        boolean itemCompatible = compatibilityDecision.isCompatibleForTooltipStatus();
         boolean serverCalculatorAvailable = CombatTooltipInputState.isServerCalculatorAvailable();
 
-        appendCompatibilityStatus(textConsumer, "tooltip.combatextended.ce_status.mod", itemCompatible);
+        appendCompatibilityStatus(textConsumer, "tooltip.combatextended.ce_status.mod", compatibilityDecision);
         if (!CombatTooltipInputState.isSingleplayer()) {
             appendCompatibilityStatus(textConsumer, "tooltip.combatextended.ce_status.server", serverCalculatorAvailable);
         }
@@ -173,8 +177,17 @@ public final class CombatWeaponTooltip {
             ).formatted(Formatting.GRAY));
         }
 
-        if (!itemCompatible || !serverCalculatorAvailable) {
+        if (!itemCompatible || compatibilityDecision.isUserWhitelisted() || !serverCalculatorAvailable) {
             textConsumer.accept(Text.empty());
+        }
+
+        if (compatibilityDecision.isUserWhitelisted()) {
+            if (compatibilityDecision.source() == CompatibilityDecisionSource.USER_ITEM_RULE) {
+                textConsumer.accept(Text.translatable("tooltip.combatextended.warning.item_marked_compatible_by_user").formatted(Formatting.GOLD));
+            } else {
+                textConsumer.accept(Text.translatable("tooltip.combatextended.warning.mod_marked_compatible_by_user").formatted(Formatting.GOLD));
+            }
+            textConsumer.accept(Text.translatable("tooltip.combatextended.warning.values_may_differ").formatted(Formatting.GOLD));
         }
 
         if (!itemCompatible) {
@@ -313,6 +326,27 @@ public final class CombatWeaponTooltip {
                 translationKey,
                 enabled ? CHECK_MARK : CROSS_MARK
         ).formatted(enabled ? Formatting.GREEN : Formatting.RED));
+    }
+
+    private static void appendCompatibilityStatus(Consumer<Text> textConsumer, String translationKey, CompatibilityDecision decision) {
+        Formatting formatting;
+        String mark;
+
+        if (decision.isBuiltInCompatible()) {
+            formatting = Formatting.GREEN;
+            mark = CHECK_MARK;
+        } else if (decision.isUserWhitelisted()) {
+            formatting = Formatting.YELLOW;
+            mark = CHECK_MARK;
+        } else {
+            formatting = Formatting.RED;
+            mark = CROSS_MARK;
+        }
+
+        textConsumer.accept(Text.translatable(
+                translationKey,
+                mark
+        ).formatted(formatting));
     }
 
     private static void appendDamage(Consumer<Text> textConsumer, String damage) {

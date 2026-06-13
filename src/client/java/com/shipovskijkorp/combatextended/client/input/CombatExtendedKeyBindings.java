@@ -1,6 +1,7 @@
 package com.shipovskijkorp.combatextended.client.input;
 
 import com.shipovskijkorp.combatextended.CombatExtended;
+import com.shipovskijkorp.combatextended.client.gui.CombatExtendedCompatibilityConfigScreen;
 import com.shipovskijkorp.combatextended.combat.tuning.CombatTooltipInputState;
 import com.shipovskijkorp.combatextended.network.DamagePreviewRequestPayload;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -17,6 +18,7 @@ public final class CombatExtendedKeyBindings {
 
     private static KeyBinding showCeDescriptionKey;
     private static KeyBinding showOriginalValuesKey;
+    private static KeyBinding openCompatibilityConfigKey;
 
     private CombatExtendedKeyBindings() {
     }
@@ -36,12 +38,23 @@ public final class CombatExtendedKeyBindings {
                 CATEGORY
         ));
 
+        openCompatibilityConfigKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.combatextended.open_compatibility_config",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                CATEGORY
+        ));
+
         CombatTooltipInputState.setRefresher(() -> updateInputState(MinecraftClient.getInstance()));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             updateInputState(client);
 
             CombatTooltipInputState.setSingleplayer(client.isIntegratedServerRunning());
+
+            while (openCompatibilityConfigKey != null && openCompatibilityConfigKey.wasPressed()) {
+                client.setScreen(new CombatExtendedCompatibilityConfigScreen(client.currentScreen));
+            }
 
             if (client.player == null || client.getNetworkHandler() == null) {
                 CombatTooltipInputState.setServerCalculatorAvailable(client.isIntegratedServerRunning());

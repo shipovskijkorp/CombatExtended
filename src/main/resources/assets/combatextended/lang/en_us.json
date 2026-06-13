@@ -23,5 +23,22 @@
   "tooltip.combatextended.hold_tab_for_ce_description.suffix": " for CE description",
   "tooltip.combatextended.hold_ctrl_for_original_values.prefix": "Hold ",
   "tooltip.combatextended.hold_ctrl_for_original_values.middle": " while holding ",
-  "tooltip.combatextended.hold_ctrl_for_original_values.suffix": " to see original values"
+  "tooltip.combatextended.hold_ctrl_for_original_values.suffix": " to see original values",
+  "key.combatextended.open_compatibility_config": "Open CE Compatibility Config",
+  "screen.combatextended.compatibility.title": "Combat Extended: Compatibility",
+  "screen.combatextended.compatibility.section.mods": "Mods",
+  "screen.combatextended.compatibility.section.items": "Items",
+  "screen.combatextended.compatibility.list.white": "White",
+  "screen.combatextended.compatibility.list.neutral": "Neutral",
+  "screen.combatextended.compatibility.list.black": "Black",
+  "screen.combatextended.compatibility.columns.actions": "W  N  B  R",
+  "screen.combatextended.compatibility.page": "Page %s/%s",
+  "screen.combatextended.compatibility.empty": "This list is empty",
+  "screen.combatextended.compatibility.source.mod_rule": "Mod rule. W/N/B changes the list.",
+  "screen.combatextended.compatibility.source.item_rule": "Item rule. R resets the override.",
+  "screen.combatextended.compatibility.source.inherited_mod_rule": "Inherited from mod rule: %s.",
+  "screen.combatextended.compatibility.source.default_neutral": "Default: neutral list. Mod: %s.",
+  "screen.combatextended.compatibility.source.built_in": "Built-in CE compatibility. Mod: %s.",
+  "tooltip.combatextended.warning.mod_marked_compatible_by_user": "The mod is marked as compatible in the list.",
+  "tooltip.combatextended.warning.item_marked_compatible_by_user": "The item is marked as compatible in the list."
 }
