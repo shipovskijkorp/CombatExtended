@@ -1,6 +1,7 @@
 package com.shipovskijkorp.combatextended;
 
 import com.shipovskijkorp.combatextended.combat.core.CombatModules;
+import com.shipovskijkorp.combatextended.combat.compatibility.heritage.HeritageOfGodsCompatibility;
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CombatCompatibilityConfig;
 import com.shipovskijkorp.combatextended.network.DamagePreviewNetworking;
 import net.fabricmc.api.ModInitializer;
@@ -19,6 +20,7 @@ public class CombatExtended implements ModInitializer {
     @Override
     public void onInitialize() {
         CombatCompatibilityConfig.init();
+        HeritageOfGodsCompatibility.init();
         CombatModules.init();
         DamagePreviewNetworking.init();
         LOGGER.info("Combat Extended initialized.");

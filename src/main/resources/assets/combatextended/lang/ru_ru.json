@@ -42,5 +42,7 @@
   "tooltip.combatextended.warning.mod_marked_compatible_by_user": "Мод отмечен как совместимый в списке.",
   "tooltip.combatextended.warning.item_marked_compatible_by_user": "Предмет отмечен как совместимый в списке.",
   "screen.combatextended.compatibility.source.internal_neutral_item": "Внутреннее исключение CE: отображается как несовместимый.",
-  "screen.combatextended.compatibility.compatible_hint": "Данный мод/предмет уже совместим с CE. Никаких действий не требуется: белый и нейтральный списки не изменят статус, чёрный список отключит CE тултип."
+  "screen.combatextended.compatibility.compatible_hint": "Данный мод/предмет уже совместим с CE. Никаких действий не требуется: белый и нейтральный списки не изменят статус, чёрный список отключит CE тултип.",
+  "tooltip.combatextended.heritage.phoenix_bow.draw_time": "Полное натяжение: %s сек",
+  "tooltip.combatextended.heritage.heavenly_gust_crossbow.reload_time": "Перезарядка: %s сек"
 }

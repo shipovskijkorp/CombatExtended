@@ -1,6 +1,7 @@
 package com.shipovskijkorp.combatextended.mixin;
 
 import com.shipovskijkorp.combatextended.combat.tuning.CombatWeaponTooltip;
+import com.shipovskijkorp.combatextended.combat.compatibility.heritage.HeritageOfGodsCompatibility;
 import net.minecraft.component.type.TooltipDisplayComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -22,6 +23,10 @@ public abstract class ItemStackMixin {
             CallbackInfo ci
     ) {
         ItemStack stack = (ItemStack) (Object) this;
+
+        if (HeritageOfGodsCompatibility.shouldPatchTooltip(stack)) {
+            return;
+        }
 
         if (!CombatWeaponTooltip.shouldReplaceAttributeTooltip(stack)) {
             return;

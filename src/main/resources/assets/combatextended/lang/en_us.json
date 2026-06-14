@@ -42,5 +42,7 @@
   "tooltip.combatextended.warning.mod_marked_compatible_by_user": "The mod is marked as compatible in the list.",
   "tooltip.combatextended.warning.item_marked_compatible_by_user": "The item is marked as compatible in the list.",
   "screen.combatextended.compatibility.source.internal_neutral_item": "Internal CE exception: displayed as not compatible.",
-  "screen.combatextended.compatibility.compatible_hint": "This mod/item is already compatible with CE. No action is required: white and neutral lists will not change this status, while the black list will disable the CE tooltip."
+  "screen.combatextended.compatibility.compatible_hint": "This mod/item is already compatible with CE. No action is required: white and neutral lists will not change this status, while the black list will disable the CE tooltip.",
+  "tooltip.combatextended.heritage.phoenix_bow.draw_time": "Full draw time: %s sec",
+  "tooltip.combatextended.heritage.heavenly_gust_crossbow.reload_time": "Reload time: %s sec"
 }

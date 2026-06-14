@@ -7,6 +7,7 @@ import com.shipovskijkorp.combatextended.combat.compatibility.config.CombatCompa
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecision;
 import com.shipovskijkorp.combatextended.combat.compatibility.config.CompatibilityDecisionSource;
 import com.shipovskijkorp.combatextended.combat.compatibility.puffishskills.PuffishSkillsCompatibility;
+import com.shipovskijkorp.combatextended.combat.compatibility.heritage.HeritageOfGodsCompatibility;
 import com.shipovskijkorp.combatextended.combat.config.CombatBalance;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.component.DataComponentTypes;
@@ -403,6 +404,14 @@ public final class CombatWeaponTooltip {
     }
 
     private static RangedDamageRange calculateRangedDamageRange(ItemStack stack, PlayerEntity player) {
+        double[] heritageRange = HeritageOfGodsCompatibility.getRangedDamageRange(stack, player);
+        if (heritageRange != null) {
+            return new RangedDamageRange(
+                    applyRangedDamageModifiers(player, stack, heritageRange[0]),
+                    applyRangedDamageModifiers(player, stack, heritageRange[1])
+            ).sanitized();
+        }
+
         Item item = stack.getItem();
 
         if (item instanceof CrossbowItem) {

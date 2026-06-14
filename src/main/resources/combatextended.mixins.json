@@ -8,6 +8,7 @@
     "accessor.PersistentProjectileEntityWeaponAccessor",
     "accessor.LivingEntityAttackCooldownAccessor",
     "ItemStackMixin",
+    "HeritageTooltipItemStackMixin",
     "entity.LivingEntityTotemCooldownMixin",
     "entity.LivingEntitySpecialExplosionDamageMixin",
     "entity.LivingEntityMultishotDamageMixin",
