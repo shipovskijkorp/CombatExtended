@@ -1,6 +1,7 @@
 package com.shipovskijkorp.combatextended.network;
 
 import com.shipovskijkorp.combatextended.combat.tuning.CombatWeaponTooltip;
+import com.shipovskijkorp.combatextended.combat.compatibility.config.CombatCompatibilityConfig;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemStack;
@@ -19,6 +20,10 @@ public final class DamagePreviewNetworking {
             ItemStack stack = payload.stack().copy();
 
             context.server().execute(() -> {
+                if (CombatCompatibilityConfig.shouldBypassCombatExtendedTooltip(stack)) {
+                    return;
+                }
+
                 boolean rangedWeapon = CombatWeaponTooltip.isRangedWeapon(stack);
                 ServerPlayNetworking.send(
                         player,

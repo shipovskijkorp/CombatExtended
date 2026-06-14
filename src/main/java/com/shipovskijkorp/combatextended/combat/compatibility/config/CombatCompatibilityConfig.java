@@ -142,7 +142,7 @@ public final class CombatCompatibilityConfig {
         String itemKey = itemId.toString();
         String namespace = itemId.getNamespace();
         CompatibilityListType itemRule = DATA.items.get(itemKey);
-        CompatibilityListType modRule = DATA.mods.get(normalizeKey(namespace));
+        CompatibilityListType modRule = getEffectiveModRuleForNamespace(namespace);
         boolean internalNeutralItem = CombatExtendedApi.isCompatibilityNeutralItem(itemId);
         boolean registeredCompatibleItem = CombatExtendedApi.isCompatibleItem(itemId);
         boolean lockedByInternalRule = internalNeutralItem || registeredCompatibleItem;
@@ -203,6 +203,10 @@ public final class CombatCompatibilityConfig {
         return !resolve(stack).isBlacklisted();
     }
 
+    public static boolean shouldBypassCombatExtendedTooltip(ItemStack stack) {
+        return !shouldShowCustomTooltip(stack);
+    }
+
     public static boolean hasCeCompatibility(ItemStack stack) {
         return resolve(stack).isCompatibleForTooltipStatus();
     }
@@ -217,6 +221,57 @@ public final class CombatCompatibilityConfig {
 
     public static boolean isInternalNeutralItem(Identifier itemId) {
         return CombatExtendedApi.isCompatibilityNeutralItem(itemId);
+    }
+
+    private static CompatibilityListType getEffectiveModRuleForNamespace(String namespace) {
+        String normalizedNamespace = normalizeKey(namespace);
+        CompatibilityListType exactRule = DATA.mods.get(normalizedNamespace);
+        if (exactRule != null) {
+            return exactRule;
+        }
+
+        CompatibilityListType fallback = null;
+        for (Map.Entry<String, CompatibilityListType> entry : DATA.mods.entrySet()) {
+            if (!modRuleMatchesItemNamespace(entry.getKey(), normalizedNamespace)) {
+                continue;
+            }
+
+            if (entry.getValue() == CompatibilityListType.BLACKLIST) {
+                return CompatibilityListType.BLACKLIST;
+            }
+
+            if (fallback == null || entry.getValue() == CompatibilityListType.WHITELIST) {
+                fallback = entry.getValue();
+            }
+        }
+
+        return fallback;
+    }
+
+    private static boolean modRuleMatchesItemNamespace(String modId, String itemNamespace) {
+        String normalizedModId = normalizeKey(modId);
+        if (normalizedModId.equals(itemNamespace)) {
+            return true;
+        }
+
+        String compactNamespace = compactIdentifierPart(itemNamespace);
+        if (compactNamespace.length() < 4) {
+            return false;
+        }
+
+        String compactModId = compactIdentifierPart(normalizedModId);
+        if (compactModId.length() >= 4 && compactModId.contains(compactNamespace)) {
+            return true;
+        }
+
+        return FabricLoader.getInstance()
+                .getModContainer(normalizedModId)
+                .map(container -> compactIdentifierPart(container.getMetadata().getName()).contains(compactNamespace))
+                .orElse(false);
+    }
+
+    private static String compactIdentifierPart(String value) {
+        return normalizeKey(value).replaceAll("[^a-z0-9]", "");
     }
 
     private static void ensureLoaded() {

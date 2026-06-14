@@ -1,6 +1,7 @@
 package com.shipovskijkorp.combatextended.client.network;
 
 import com.shipovskijkorp.combatextended.combat.tuning.CombatTooltipInputState;
+import com.shipovskijkorp.combatextended.combat.compatibility.config.CombatCompatibilityConfig;
 import com.shipovskijkorp.combatextended.combat.tuning.ServerDamagePreviewBridge;
 import com.shipovskijkorp.combatextended.network.DamagePreviewRequestPayload;
 import com.shipovskijkorp.combatextended.network.DamagePreviewResponsePayload;
@@ -65,6 +66,10 @@ public final class ClientDamagePreviewNetworking {
         }
 
         if (!CombatTooltipInputState.isServerCalculatorAvailable()) {
+            return Optional.empty();
+        }
+
+        if (CombatCompatibilityConfig.shouldBypassCombatExtendedTooltip(stack)) {
             return Optional.empty();
         }
 
