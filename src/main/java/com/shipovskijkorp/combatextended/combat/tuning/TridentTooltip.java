@@ -21,11 +21,6 @@ public final class TridentTooltip {
                 "tooltip.combatextended.trident.attack_speed",
                 format(CombatBalance.TRIDENT_ATTACK_SPEED)
         ).formatted(Formatting.DARK_GREEN));
-
-        textConsumer.accept(Text.translatable(
-                "tooltip.combatextended.trident.entity_interaction_range",
-                format(CombatBalance.TRIDENT_ATTACK_RANGE)
-        ).formatted(Formatting.DARK_GREEN));
     }
 
     private static String format(double value) {

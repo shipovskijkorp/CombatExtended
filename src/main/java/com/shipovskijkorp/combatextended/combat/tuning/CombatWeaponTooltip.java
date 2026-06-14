@@ -146,11 +146,6 @@ public final class CombatWeaponTooltip {
                 EntityAttributes.ATTACK_SPEED,
                 CombatBalance.VANILLA_PLAYER_BASE_ATTACK_SPEED
         )));
-        appendAttackRange(textConsumer, format(getMainHandAttributeValue(
-                stack,
-                EntityAttributes.ENTITY_INTERACTION_RANGE,
-                CombatBalance.VANILLA_PLAYER_ENTITY_INTERACTION_RANGE
-        )));
         CombatExtendedApi.appendTooltip(stack, player, textConsumer, CombatExtendedTooltipPhase.NORMAL);
         appendTabHint(textConsumer);
     }
@@ -371,13 +366,6 @@ public final class CombatWeaponTooltip {
         ).formatted(Formatting.DARK_GREEN));
     }
 
-    private static void appendAttackRange(Consumer<Text> textConsumer, String attackRange) {
-        textConsumer.accept(Text.translatable(
-                "tooltip.combatextended.weapon.attack_range",
-                attackRange
-        ).formatted(Formatting.DARK_GREEN));
-    }
-
     private static void appendTabHint(Consumer<Text> textConsumer) {
         textConsumer.accept(createKeyHint(
                 "tooltip.combatextended.hold_tab_for_ce_description.prefix",
@@ -475,8 +463,7 @@ public final class CombatWeaponTooltip {
 
         stack.applyAttributeModifiers(EquipmentSlot.MAINHAND, (attribute, modifier) -> {
             if (attribute.equals(EntityAttributes.ATTACK_DAMAGE)
-                    || attribute.equals(EntityAttributes.ATTACK_SPEED)
-                    || attribute.equals(EntityAttributes.ENTITY_INTERACTION_RANGE)) {
+                    || attribute.equals(EntityAttributes.ATTACK_SPEED)) {
                 found[0] = true;
             }
         });
